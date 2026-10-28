@@ -2,62 +2,294 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Tienda Mínima SQL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tienda Web & Sistema SQL</title>
   <style>
-    body { font-family: sans-serif; max-width: 450px; margin: 20px auto; padding: 10px; }
-    form { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-    input, select, button { display: block; width: 100%; margin: 8px 0; padding: 8px; box-sizing: border-box; }
-    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; color: #333; padding: 20px; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h2 { margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; font-size: 18px; }
+    h3 { font-size: 15px; margin-bottom: 8px; color: #34495e; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .btn-group { display: flex; gap: 10px; }
+    button { flex: 1; padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+    button:hover { background: #2980b9; }
+    button.btn-success { background: #2ecc71; }
+    button.btn-success:hover { background: #27ae60; }
+    button.btn-dark { background: #34495e; }
+    button.btn-dark:hover { background: #2c3e50; }
+    .user-status { background: #e8f8f5; border-left: 4px solid #2ecc71; padding: 10px; margin-bottom: 15px; font-weight: bold; color: #16a085; display: none; }
+    .terminal { background: #1e1e1e; color: #00ff66; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; height: 120px; overflow-y: auto; margin-bottom: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #34495e; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; color: white; font-weight: bold; display: inline-block; }
+    .bg-ropa { background: #e74c3c; }
+    .bg-cosmeticos { background: #9b59b6; }
+    .bg-calzado { background: #e67e22; }
+    .bg-celulares { background: #2980b9; }
   </style>
 </head>
 <body>
-  <h2>Tienda en Línea</h2>
-  <div id="log" style="color: blue; font-weight: bold; margin-bottom: 10px;"></div>
 
-  <!-- 1. Autenticación -->
-  <form>
-    <h3>1. Iniciar Sesión / Registro</h3>
-    <input type="text" id="user" placeholder="Usuario" required>
-    <input type="password" id="pass" placeholder="Contraseña" required>
-    <button type="button" onclick="ejecutarSQL('REGISTRO')">Registrar (INSERT)</button>
-    <button type="button" onclick="ejecutarSQL('LOGIN')">Iniciar Sesión (SELECT)</button>
-  </form>
+<div class="container">
+  <header>
+    <h1>Tienda Multi-Marca con Base de Datos SQL</h1>
+    <p>Gestión de Calzado, Cosméticos, Celulares y Ropa</p>
+  </header>
 
-  <!-- 2. Formulario de Venta -->
-  <form>
-    <h3>2. Formulario de Venta</h3>
-    <label>Categoría:</label>
-    <select id="cat">
-      <option>Ropa</option>
-      <option>Cosméticos</option>
-      <option>Calzado</option>
-      <option>Celulares</option>
-    </select>
+  <div id="user-banner" class="user-status">
+    Estado: Sesión iniciada con el usuario <b><span id="current-user">invitado</span></b>
+  </div>
 
-    <label>Marca:</label>
-    <select id="marca">
-      <option>Nike</option><option>Adidas</option>
-      <option>Apple</option><option>Samsung</option><option>L'Oréal</option>
-    </select>
+  <div class="grid">
+    <!-- Módulo 1: Autenticación SQL -->
+    <div class="card">
+      <h2>1. Autenticación de Usuario</h2>
+      <form id="auth-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="username">Nombre de Usuario:</label>
+          <input type="text" id="username" placeholder="Ej. juan123" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Contraseña:</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn-dark" onclick="registrarUsuario()">Registrar (INSERT)</button>
+          <button type="button" class="btn-success" onclick="iniciarSesion()">Ingresar (SELECT)</button>
+        </div>
+      </form>
+    </div>
 
-    <input type="text" id="prod" placeholder="Nombre del Producto" required>
-    <input type="number" id="precio" placeholder="Precio ($)" required>
-    <button type="button" onclick="ejecutarSQL('VENTA')">Guardar Venta (INSERT)</button>
-  </form>
+    <!-- Módulo 2: Formulario de Venta -->
+    <div class="card">
+      <h2>2. Registro de Venta</h2>
+      <form id="sale-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="categoria">Categoría de Producto:</label>
+          <select id="categoria" onchange="actualizarMarcas()">
+            <option value="Ropa">Ropa</option>
+            <option value="Cosméticos">Cosméticos</option>
+            <option value="Calzado">Calzado</option>
+            <option value="Celulares">Celulares</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="marca">Marca Seleccionada:</label>
+          <select id="marca">
+            <!-- Se llena dinámicamente con JS -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="producto">Nombre del Producto:</label>
+          <input type="text" id="producto" placeholder="Ej. iPhone 15 / Zapatillas Air Max" required>
+        </div>
+        <div class="grid" style="gap: 10px; margin-bottom: 15px;">
+          <div>
+            <label for="precio">Precio ($):</label>
+            <input type="number" id="precio" placeholder="0.00" step="0.01" required>
+          </div>
+          <div>
+            <label for="cantidad">Cantidad:</label>
+            <input type="number" id="cantidad" value="1" min="1" required>
+          </div>
+        </div>
+        <button type="button" class="btn-success" onclick="registrarVenta()">Guardar Venta (INSERT INTO ventas)</button>
+      </form>
+    </div>
+  </div>
 
-  <script>
-    function ejecutarSQL(tipo) {
-      const u = document.getElementById('user').value, p = document.getElementById('pass').value;
-      const c = document.getElementById('cat').value, m = document.getElementById('marca').value;
-      const pr = document.getElementById('prod').value, px = document.getElementById('precio').value;
-      let sql = "";
+  <!-- Módulo 3: Monitor SQL -->
+  <div class="card">
+    <h2>3. Monitor de Consultas SQL en Tiempo Real</h2>
+    <div class="terminal" id="sql-terminal">
+      -- Conexión establecida con la Base de Datos...<br>
+      -- Esperando instrucciones SQL...
+    </div>
+  </div>
 
-      if (tipo === 'REGISTRO') sql = `INSERT INTO usuarios VALUES ('${u}', '${p}');`;
-      if (tipo === 'LOGIN') sql = `SELECT * FROM usuarios WHERE user='${u}' AND pass='${p}';`;
-      if (tipo === 'VENTA') sql = `INSERT INTO ventas VALUES ('${c}', '${m}', '${pr}', ${px});`;
+  <!-- Módulo 4: Visualización de Tablas SQL -->
+  <div class="card">
+    <h2>4. Registros Guardados en la Base de Datos SQL</h2>
+    <h3>Tabla: usuarios</h3>
+    <table id="table-usuarios">
+      <thead>
+        <tr><th>ID</th><th>Usuario</th><th>Hash de Contraseña</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-      document.getElementById('log').innerText = "SQL Ejecutado: " + sql;
+    <h3 style="margin-top:20px;">Tabla: ventas</h3>
+    <table id="table-ventas">
+      <thead>
+        <tr><th>ID</th><th>Cliente</th><th>Categoría</th><th>Marca</th><th>Producto</th><th>Cantidad</th><th>Total ($)</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Relación de Marcas según la Categoría seleccionada
+  const marcasPorCategoria = {
+    'Ropa': ['Zara', 'H&M', 'Nike Apparel', 'Levi\'s'],
+    'Cosméticos': ['L\'Oréal', 'Maybelline', 'MAC', 'Sephora'],
+    'Calzado': ['Nike', 'Adidas', 'Puma', 'Reebok'],
+    'Celulares': ['Apple', 'Samsung', 'Xiaomi', 'Motorola']
+  };
+
+  // Base de Datos Simulada en memoria
+  let db = {
+    usuarios: [
+      { id: 1, usuario: 'admin', pass: '1234' }
+    ],
+    ventas: [
+      { id: 1, cliente: 'admin', categoria: 'Celulares', marca: 'Apple', producto: 'iPhone 15 Pro', cantidad: 1, total: 999.00 }
+    ]
+  };
+
+  let usuarioActual = null;
+
+  // Cambia dinámicamente las opciones de marca
+  function actualizarMarcas() {
+    const cat = document.getElementById('categoria').value;
+    const selectMarca = document.getElementById('marca');
+    selectMarca.innerHTML = '';
+    
+    marcasPorCategoria[cat].forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      selectMarca.appendChild(opt);
+    });
+  }
+
+  // Registra la sentencia en la consola negra
+  function logSQL(query) {
+    const terminal = document.getElementById('sql-terminal');
+    const timestamp = new Date().toLocaleTimeString();
+    terminal.innerHTML += `<br><span style="color:#888;">[${timestamp}]</span> ${query}`;
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  // Registro de usuario (INSERT INTO usuarios)
+  function registrarUsuario() {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+
+    if (!u || !p) return alert('Por favor complete usuario y contraseña.');
+
+    const existe = db.usuarios.find(user => user.usuario === u);
+    if (existe) {
+      alert('El usuario ya existe en la base de datos.');
+      return;
     }
-  </script>
+
+    const newId = db.usuarios.length + 1;
+    const sqlQuery = `INSERT INTO usuarios (id, usuario, password) VALUES (${newId}, '${u}', '${p}');`;
+    logSQL(sqlQuery);
+
+    db.usuarios.push({ id: newId, usuario: u, pass: p });
+    renderTablas();
+    alert('Usuario registrado con éxito en SQL.');
+  }
+
+  // Inicio de sesión (SELECT FROM usuarios)
+  function iniciarSesion() {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+
+    const sqlQuery = `SELECT * FROM usuarios WHERE usuario = '${u}' AND password = '${p}';`;
+    logSQL(sqlQuery);
+
+    const userObj = db.usuarios.find(user => user.usuario === u && user.pass === p);
+    if (userObj) {
+      usuarioActual = u;
+      document.getElementById('current-user').textContent = u;
+      document.getElementById('user-banner').style.display = 'block';
+      alert(`¡Bienvenido ${u}! Sesión iniciada.`);
+    } else {
+      alert('Credenciales incorrectas o usuario inexistente.');
+    }
+  }
+
+  // Registro de venta (INSERT INTO ventas)
+  function registrarVenta() {
+    const cat = document.getElementById('categoria').value;
+    const marca = document.getElementById('marca').value;
+    const prod = document.getElementById('producto').value.trim();
+    const precio = parseFloat(document.getElementById('precio').value);
+    const cant = parseInt(document.getElementById('cantidad').value);
+
+    if (!prod || isNaN(precio) || isNaN(cant) || precio <= 0 || cant <= 0) {
+      return alert('Ingrese los datos válidos del producto.');
+    }
+
+    const cliente = usuarioActual ? usuarioActual : 'Invitado';
+    const total = (precio * cant).toFixed(2);
+    const newId = db.ventas.length + 1;
+
+    const sqlQuery = `INSERT INTO ventas (id, cliente, categoria, marca, producto, cantidad, total) VALUES (${newId}, '${cliente}', '${cat}', '${marca}', '${prod}', ${cant}, ${total});`;
+    logSQL(sqlQuery);
+
+    db.ventas.push({
+      id: newId,
+      cliente: cliente,
+      categoria: cat,
+      marca: marca,
+      producto: prod,
+      cantidad: cant,
+      total: total
+    });
+
+    renderTablas();
+    alert('Venta guardada correctamente en SQL.');
+  }
+
+  // Refresca la vista HTML de las tablas de datos
+  function renderTablas() {
+    // Render tabla usuarios
+    const tbodyUsers = document.querySelector('#table-usuarios tbody');
+    tbodyUsers.innerHTML = db.usuarios.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.usuario}</td>
+        <td>••••••••</td>
+      </tr>
+    `).join('');
+
+    // Render tabla ventas
+    const tbodyVentas = document.querySelector('#table-ventas tbody');
+    tbodyVentas.innerHTML = db.ventas.map(v => {
+      let badgeClass = 'bg-' + v.categoria.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return `
+        <tr>
+          <td>${v.id}</td>
+          <td><b>${v.cliente}</b></td>
+          <td><span class="badge ${badgeClass}">${v.categoria}</span></td>
+          <td>${v.marca}</td>
+          <td>${v.producto}</td>
+          <td>${v.cantidad}</td>
+          <td>$${v.total}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Inicialización al cargar la página
+  window.onload = function() {
+    actualizarMarcas();
+    renderTablas();
+  };
+</script>
+
 </body>
 </html>
