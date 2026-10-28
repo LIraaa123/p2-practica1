@@ -1,452 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sitio Web de Ventas con Base de Datos SQL</title>
-    <!-- Tailwind CSS para diseño limpio y moderno -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- AlaSQL: Motor SQL en memoria -->
-    <script src="https://cdn.jsdelivr.net/npm/alasql@4"></script>
-    <!-- FontAwesome para iconos sencillos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <title>Tienda Mínima SQL</title>
+  <style>
+    body { font-family: sans-serif; max-width: 450px; margin: 20px auto; padding: 10px; }
+    form { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+    input, select, button { display: block; width: 100%; margin: 8px 0; padding: 8px; box-sizing: border-box; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+<body>
+  <h2>Tienda en Línea</h2>
+  <div id="log" style="color: blue; font-weight: bold; margin-bottom: 10px;"></div>
 
-    <!-- ENCABEZADO Y NAVEGACIÓN -->
-    <header class="bg-indigo-600 text-white shadow-md">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-store text-2xl"></i>
-                <div>
-                    <h1 class="font-bold text-lg">Mi Tienda Web SQL</h1>
-                    <p class="text-xs text-indigo-100">Venta de Ropa, Cosméticos, Calzado y Celulares</p>
-                </div>
-            </div>
+  <!-- 1. Autenticación -->
+  <form>
+    <h3>1. Iniciar Sesión / Registro</h3>
+    <input type="text" id="user" placeholder="Usuario" required>
+    <input type="password" id="pass" placeholder="Contraseña" required>
+    <button type="button" onclick="ejecutarSQL('REGISTRO')">Registrar (INSERT)</button>
+    <button type="button" onclick="ejecutarSQL('LOGIN')">Iniciar Sesión (SELECT)</button>
+  </form>
 
-            <!-- Botones de Navegación -->
-            <nav class="flex gap-2 text-xs sm:text-sm">
-                <button onclick="cambiarPestana('auth')" id="btnNavAuth" class="px-3 py-2 rounded-lg bg-indigo-700 font-bold">
-                    <i class="fa-solid fa-user mr-1"></i> 1. Sesión / Registro
-                </button>
-                <button onclick="cambiarPestana('compra')" id="btnNavCompra" class="px-3 py-2 rounded-lg hover:bg-indigo-500">
-                    <i class="fa-solid fa-cart-shopping mr-1"></i> 2. Comprar
-                </button>
-                <button onclick="cambiarPestana('bd')" id="btnNavBD" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-bold">
-                    <i class="fa-solid fa-database mr-1"></i> 3. Ver Base de Datos SQL
-                </button>
-            </nav>
-        </div>
-    </header>
+  <!-- 2. Formulario de Venta -->
+  <form>
+    <h3>2. Formulario de Venta</h3>
+    <label>Categoría:</label>
+    <select id="cat">
+      <option>Ropa</option>
+      <option>Cosméticos</option>
+      <option>Calzado</option>
+      <option>Celulares</option>
+    </select>
 
-    <!-- USUARIO ACTUALMENTE CONECTADO -->
-    <div class="bg-indigo-900 text-indigo-200 text-xs py-2 px-4">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <span><i class="fa-solid fa-circle-user mr-1"></i> Estado: <strong id="lblUsuarioConectado" class="text-white">No has iniciado sesión</strong></span>
-            <span class="font-mono text-[11px] text-emerald-400">SQL Engine: Listo</span>
-        </div>
-    </div>
+    <label>Marca:</label>
+    <select id="marca">
+      <option>Nike</option><option>Adidas</option>
+      <option>Apple</option><option>Samsung</option><option>L'Oréal</option>
+    </select>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
+    <input type="text" id="prod" placeholder="Nombre del Producto" required>
+    <input type="number" id="precio" placeholder="Precio ($)" required>
+    <button type="button" onclick="ejecutarSQL('VENTA')">Guardar Venta (INSERT)</button>
+  </form>
 
-        <!-- 1. REGISTRO E INICIO DE SESIÓN -->
-        <section id="secAuth" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Formulario de Registro -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="font-bold text-lg text-slate-800 mb-1 flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus text-indigo-600"></i> Registrarse
-                </h2>
-                <p class="text-xs text-slate-500 mb-4">Crea una cuenta para guardar tus datos en la BD SQL.</p>
+  <script>
+    function ejecutarSQL(tipo) {
+      const u = document.getElementById('user').value, p = document.getElementById('pass').value;
+      const c = document.getElementById('cat').value, m = document.getElementById('marca').value;
+      const pr = document.getElementById('prod').value, px = document.getElementById('precio').value;
+      let sql = "";
 
-                <form onsubmit="registrarUsuario(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
-                        <input type="text" id="regNombre" required placeholder="Ej. Ana García" class="w-full text-sm p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
-                        <input type="email" id="regEmail" required placeholder="ana@ejemplo.com" class="w-full text-sm p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
-                        <input type="password" id="regPassword" required placeholder="••••••••" class="w-full text-sm p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
+      if (tipo === 'REGISTRO') sql = `INSERT INTO usuarios VALUES ('${u}', '${p}');`;
+      if (tipo === 'LOGIN') sql = `SELECT * FROM usuarios WHERE user='${u}' AND pass='${p}';`;
+      if (tipo === 'VENTA') sql = `INSERT INTO ventas VALUES ('${c}', '${m}', '${pr}', ${px});`;
 
-                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm transition">
-                        Registrar Usuario en SQL
-                    </button>
-                </form>
-            </div>
-
-            <!-- Formulario de Inicio de Sesión -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                <div>
-                    <h2 class="font-bold text-lg text-slate-800 mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket text-emerald-600"></i> Iniciar Sesión
-                    </h2>
-                    <p class="text-xs text-slate-500 mb-4">Consulta la tabla de usuarios mediante SQL.</p>
-
-                    <form onsubmit="iniciarSesion(event)" class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico</label>
-                            <input type="email" id="loginEmail" required placeholder="ana@ejemplo.com" class="w-full text-sm p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
-                            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full text-sm p-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-
-                        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm transition">
-                            Iniciar Sesión
-                        </button>
-                    </form>
-                </div>
-
-                <div class="mt-4 p-3 bg-slate-100 rounded-lg text-xs text-slate-600">
-                    <strong>💡 Usuario de prueba:</strong><br>
-                    Correo: <code>carlos@ejemplo.com</code> | Clave: <code>1234</code>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- 2. SELECCIÓN DE CATEGORÍA, MARCA Y COMPRA -->
-        <section id="secCompra" class="hidden max-w-2xl mx-auto">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-                
-                <div class="border-b pb-3">
-                    <h2 class="font-bold text-lg text-slate-800">Formulario de Compra de Productos</h2>
-                    <p class="text-xs text-slate-500">Selecciona categoría, marca y registra tu compra directamente en la Base de Datos.</p>
-                </div>
-
-                <form onsubmit="guardarPedido(event)" class="space-y-4">
-                    
-                    <!-- 1. Categoría -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">1. Seleccionar Categoría *</label>
-                        <select id="selCategoria" onchange="actualizarMarcas()" required class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500">
-                            <option value="">-- Elige una Categoría --</option>
-                            <option value="Ropa">👕 Ropa</option>
-                            <option value="Cosméticos">💄 Cosméticos</option>
-                            <option value="Calzado">👟 Calzado</option>
-                            <option value="Celulares">📱 Celulares</option>
-                        </select>
-                    </div>
-
-                    <!-- 2. Marca -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">2. Seleccionar Marca *</label>
-                        <select id="selMarca" onchange="actualizarProductos()" required class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500">
-                            <option value="">-- Primero selecciona una categoría --</option>
-                        </select>
-                    </div>
-
-                    <!-- 3. Producto -->
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">3. Seleccionar Producto *</label>
-                        <select id="selProducto" onchange="actualizarPrecio()" required class="w-full p-2.5 border rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500">
-                            <option value="">-- Primero selecciona una marca --</option>
-                        </select>
-                    </div>
-
-                    <!-- Detalles del Cliente y Compra -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Cliente *</label>
-                            <input type="text" id="txtCliente" required placeholder="Tu Nombre" class="w-full p-2.5 border rounded-lg text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Cantidad *</label>
-                            <input type="number" id="txtCantidad" min="1" value="1" onchange="actualizarPrecio()" required class="w-full p-2.5 border rounded-lg text-sm">
-                        </div>
-                    </div>
-
-                    <!-- Precio Total -->
-                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 flex justify-between items-center">
-                        <span class="text-xs font-bold text-emerald-800">Total a Pagar:</span>
-                        <span id="lblTotal" class="text-xl font-extrabold text-emerald-700">$0.00</span>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm transition">
-                        <i class="fa-solid fa-check mr-1"></i> Guardar Compra en BD (SQL)
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- 3. BASE DE DATOS SQL (VISOR) -->
-        <section id="secBD" class="hidden space-y-4">
-            <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md border border-slate-800 space-y-4">
-                
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
-                    <div>
-                        <h2 class="font-bold text-lg text-emerald-400 flex items-center gap-2">
-                            <i class="fa-solid fa-database"></i> Visor de Base de Datos SQL
-                        </h2>
-                        <p class="text-xs text-slate-400">Verifica los datos guardados en las tablas mediante consultas SQL.</p>
-                    </div>
-
-                    <!-- Botones para cambiar de Tabla -->
-                    <div class="flex gap-2 text-xs">
-                        <button onclick="cargarTablaBD('usuarios')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 font-mono">Tabla: usuarios</button>
-                        <button onclick="cargarTablaBD('pedidos')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 font-mono">Tabla: pedidos</button>
-                        <button onclick="cargarTablaBD('productos')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 font-mono">Tabla: productos</button>
-                    </div>
-                </div>
-
-                <!-- Muestra de la Consulta SQL realizada -->
-                <div class="bg-black/60 p-3 rounded-lg font-mono text-xs text-emerald-300 border border-slate-800">
-                    <span class="text-slate-500 block text-[10px] uppercase font-sans mb-0.5">Última Consulta SQL Ejecutada:</span>
-                    <code id="txtConsultaSQL">SELECT * FROM usuarios;</code>
-                </div>
-
-                <!-- Tabla Dinámica con los datos -->
-                <div class="overflow-x-auto rounded-lg border border-slate-800">
-                    <table id="tablaVisualBD" class="w-full text-left font-mono text-xs">
-                        <!-- Generado por JavaScript -->
-                    </table>
-                </div>
-
-            </div>
-        </section>
-
-    </main>
-
-    <!-- MENSAJE TOAST -->
-    <div id="toast" class="fixed bottom-5 right-5 hidden bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold z-50"></div>
-
-    <!-- JAVASCRIPT SENCILLO Y FÁCIL DE ENTENDER -->
-    <script>
-        // ---------------------------------------------------------
-        // BASE DE DATOS - DATOS DE PRODUCTOS POR CATEGORÍA Y MARCA
-        // ---------------------------------------------------------
-        const catalogData = {
-            "Ropa": {
-                "Zara": [ {id: 1, nombre: "Chaqueta Casual", precio: 69.90}, {id: 2, nombre: "Pantalón Vestir", precio: 45.00} ],
-                "Nike": [ {id: 3, nombre: "Sudadera Deportiva", precio: 55.00} ]
-            },
-            "Cosméticos": {
-                "Sephora": [ {id: 4, nombre: "Paleta de Maquillaje", precio: 38.00} ],
-                "L'Oréal": [ {id: 5, nombre: "Crema Hidratante", precio: 24.50} ]
-            },
-            "Calzado": {
-                "Nike": [ {id: 6, nombre: "Tenis Air Max", precio: 120.00} ],
-                "Adidas": [ {id: 7, nombre: "Zapatillas Ultraboost", precio: 140.00} ]
-            },
-            "Celulares": {
-                "Apple": [ {id: 8, nombre: "iPhone 15 Pro", precio: 999.00} ],
-                "Samsung": [ {id: 9, nombre: "Galaxy S24 Ultra", precio: 899.00} ]
-            }
-        };
-
-        let usuarioActual = null;
-
-        // ---------------------------------------------------------
-        // 1. INICIALIZAR LA BASE DE DATOS SQL EN MEMORIA (ALASQL)
-        // ---------------------------------------------------------
-        function iniciarBD() {
-            // Crear tablas SQL
-            alasql(`
-                CREATE TABLE IF NOT EXISTS usuarios (id INT AUTO_INCREMENT PRIMARY KEY, nombre STRING, email STRING, password STRING);
-                CREATE TABLE IF NOT EXISTS pedidos (id INT AUTO_INCREMENT PRIMARY KEY, cliente STRING, categoria STRING, marca STRING, producto STRING, cantidad INT, total FLOAT);
-                CREATE TABLE IF NOT EXISTS productos (id INT PRIMARY KEY, nombre STRING, marca STRING, categoria STRING, precio FLOAT);
-            `);
-
-            // Insertar datos iniciales si está vacía
-            if (alasql('SELECT COUNT(*) as total FROM usuarios')[0].total === 0) {
-                alasql("INSERT INTO usuarios (nombre, email, password) VALUES ('Carlos Gómez', 'carlos@ejemplo.com', '1234');");
-                
-                // Cargar catálogo en la tabla de productos SQL
-                Object.keys(catalogData).forEach(cat => {
-                    Object.keys(catalogData[cat]).forEach(marca => {
-                        catalogData[cat][marca].forEach(p => {
-                            alasql(`INSERT INTO productos VALUES (${p.id}, '${p.nombre}', '${marca}', '${cat}', ${p.precio});`);
-                        });
-                    });
-                });
-            }
-        }
-
-        // ---------------------------------------------------------
-        // 2. REGISTRO E INICIO DE SESIÓN CON SQL
-        // ---------------------------------------------------------
-        function registrarUsuario(e) {
-            e.preventDefault();
-            const nom = document.getElementById('regNombre').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const pass = document.getElementById('regPassword').value.trim();
-
-            const sql = `INSERT INTO usuarios (nombre, email, password) VALUES ('${nom}', '${email}', '${pass}');`;
-            alasql(sql);
-
-            mostrarToast("¡Usuario registrado en SQL correctamente!");
-            document.getElementById('regNombre').value = '';
-            document.getElementById('regEmail').value = '';
-            document.getElementById('regPassword').value = '';
-
-            // Iniciar sesión automáticamente
-            establecerUsuario({ nombre: nom, email: email });
-        }
-
-        function iniciarSesion(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value.trim();
-            const pass = document.getElementById('loginPassword').value.trim();
-
-            // Consulta SQL de búsqueda
-            const sql = `SELECT * FROM usuarios WHERE email = '${email}' AND password = '${pass}';`;
-            const resultados = alasql(sql);
-
-            if (resultados.length > 0) {
-                establecerUsuario(resultados[0]);
-                mostrarToast(`Bienvenido de nuevo, ${resultados[0].nombre}`);
-                cambiarPestana('compra');
-            } else {
-                mostrarToast("Correo o contraseña incorrectos");
-            }
-        }
-
-        function establecerUsuario(usr) {
-            usuarioActual = usr;
-            document.getElementById('lblUsuarioConectado').textContent = `${usr.nombre} (${usr.email})`;
-            document.getElementById('txtCliente').value = usr.nombre;
-        }
-
-        // ---------------------------------------------------------
-        // 3. COMBOBOX DINÁMICOS Y REGISTRO DE VENTA/COMPRA
-        // ---------------------------------------------------------
-        function actualizarMarcas() {
-            const cat = document.getElementById('selCategoria').value;
-            const selMarca = document.getElementById('selMarca');
-            selMarca.innerHTML = '<option value="">-- Seleccionar Marca --</option>';
-            document.getElementById('selProducto').innerHTML = '<option value="">-- Primero selecciona una marca --</option>';
-
-            if (cat && catalogData[cat]) {
-                Object.keys(catalogData[cat]).forEach(marca => {
-                    selMarca.innerHTML += `<option value="${marca}">${marca}</option>`;
-                });
-            }
-            actualizarPrecio();
-        }
-
-        function actualizarProductos() {
-            const cat = document.getElementById('selCategoria').value;
-            const marca = document.getElementById('selMarca').value;
-            const selProd = document.getElementById('selProducto');
-            selProd.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
-
-            if (cat && marca && catalogData[cat][marca]) {
-                catalogData[cat][marca].forEach(p => {
-                    selProd.innerHTML += `<option value="${p.nombre}" data-precio="${p.precio}">${p.nombre} - $${p.precio.toFixed(2)}</option>`;
-                });
-            }
-            actualizarPrecio();
-        }
-
-        function actualizarPrecio() {
-            const selProd = document.getElementById('selProducto');
-            const opt = selProd.options[selProd.selectedIndex];
-            const cant = parseInt(document.getElementById('txtCantidad').value || 1);
-
-            if (opt && opt.getAttribute('data-precio')) {
-                const precio = parseFloat(opt.getAttribute('data-precio'));
-                const total = precio * cant;
-                document.getElementById('lblTotal').textContent = `$${total.toFixed(2)}`;
-            } else {
-                document.getElementById('lblTotal').textContent = "$0.00";
-            }
-        }
-
-        function guardarPedido(e) {
-            e.preventDefault();
-            const cat = document.getElementById('selCategoria').value;
-            const marca = document.getElementById('selMarca').value;
-            const prod = document.getElementById('selProducto').value;
-            const cliente = document.getElementById('txtCliente').value.trim();
-            const cant = parseInt(document.getElementById('txtCantidad').value);
-            
-            const selProd = document.getElementById('selProducto');
-            const precio = parseFloat(selProd.options[selProd.selectedIndex].getAttribute('data-precio'));
-            const total = precio * cant;
-
-            // INSERT INTO PEDIDOS (SQL)
-            const sql = `INSERT INTO pedidos (cliente, categoria, marca, producto, cantidad, total) VALUES ('${cliente}', '${cat}', '${marca}', '${prod}', ${cant}, ${total});`;
-            alasql(sql);
-
-            mostrarToast("¡Compra registrada exitosamente en la BD!");
-            cambiarPestana('bd');
-            cargarTablaBD('pedidos');
-        }
-
-        // ---------------------------------------------------------
-        // 4. VISUALIZADOR DE TABLAS Y CONSULTAS SQL
-        // ---------------------------------------------------------
-        function cargarTablaBD(nombreTabla) {
-            const sql = `SELECT * FROM ${nombreTabla};`;
-            document.getElementById('txtConsultaSQL').textContent = sql;
-
-            const datos = alasql(sql);
-            const tabla = document.getElementById('tablaVisualBD');
-
-            if (datos.length === 0) {
-                tabla.innerHTML = `<tr><td class="p-4 text-slate-500 italic">La tabla ${nombreTabla} está vacía.</td></tr>`;
-                return;
-            }
-
-            const columnas = Object.keys(datos[0]);
-
-            // Encabezado
-            let html = `<thead class="bg-slate-800 text-emerald-400"><tr>`;
-            columnas.forEach(col => html += `<th class="p-2.5 border-b border-slate-700">${col}</th>`);
-            html += `</tr></thead><tbody>`;
-
-            // Filas
-            datos.forEach((row, idx) => {
-                html += `<tr class="${idx % 2 === 0 ? 'bg-slate-900' : 'bg-slate-950'} border-b border-slate-800/50">`;
-                columnas.forEach(col => html += `<td class="p-2.5 text-slate-300">${row[col]}</td>`);
-                html += `</tr>`;
-            });
-            html += `</tbody>`;
-
-            tabla.innerHTML = html;
-        }
-
-        // ---------------------------------------------------------
-        // UTILIDADES: CAMBIO DE PESTAÑA Y TOASTS
-        // ---------------------------------------------------------
-        function cambiarPestana(pestana) {
-            document.getElementById('secAuth').classList.add('hidden');
-            document.getElementById('secCompra').classList.add('hidden');
-            document.getElementById('secBD').classList.add('hidden');
-
-            document.getElementById('btnNavAuth').className = "px-3 py-2 rounded-lg hover:bg-indigo-500";
-            document.getElementById('btnNavCompra').className = "px-3 py-2 rounded-lg hover:bg-indigo-500";
-
-            if (pestana === 'auth') {
-                document.getElementById('secAuth').classList.remove('hidden');
-                document.getElementById('btnNavAuth').className = "px-3 py-2 rounded-lg bg-indigo-700 font-bold";
-            } else if (pestana === 'compra') {
-                document.getElementById('secCompra').classList.remove('hidden');
-                document.getElementById('btnNavCompra').className = "px-3 py-2 rounded-lg bg-indigo-700 font-bold";
-            } else if (pestana === 'bd') {
-                document.getElementById('secBD').classList.remove('hidden');
-                cargarTablaBD('usuarios');
-            }
-        }
-
-        function mostrarToast(mensaje) {
-            const toast = document.getElementById('toast');
-            toast.textContent = mensaje;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
-
-        // Cargar BD al abrir la página
-        window.onload = function() {
-            iniciarBD();
-        };
-    </script>
+      document.getElementById('log').innerText = "SQL Ejecutado: " + sql;
+    }
+  </script>
 </body>
 </html>
